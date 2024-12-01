@@ -45,7 +45,7 @@ library:
   source-dirs: src
 
 executables:
-  migrator-exe:
+  migrate:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
@@ -56,7 +56,7 @@ executables:
     - migrator
 
 tests:
-  migrator-test:
+  migrate-test:
     main:                Spec.hs
     source-dirs:         test
     ghc-options:
