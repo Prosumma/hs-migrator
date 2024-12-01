@@ -18,7 +18,7 @@ import RIO.Time
 logSource :: LogSource
 logSource = "MIGRATE"
 
-data Command = Migrate Bool (Maybe FilePath) | New FilePath (Maybe FilePath) deriving (Eq, Show)
+data Command = Migrate Bool (Maybe FilePath) Bool | New FilePath (Maybe FilePath) deriving (Eq, Show)
 
 directoryOption :: Parser (Maybe FilePath)
 directoryOption = optional $ strOption
@@ -29,11 +29,14 @@ directoryOption = optional $ strOption
 
 initOption :: Parser Bool  
 initOption = not <$> switch (long "no-init" <> help "Set this flag to disable initializing the database")
+
+dropOption :: Parser Bool
+dropOption = switch (long "drop" <> help "Drop the target database as the first step.")
   
 parseCommand :: Parser Command
 parseCommand = subparser (migrate <> new)
   where
-    migrate = command "migrate" (info (Migrate <$> initOption <*> directoryOption) (progDesc ""))
+    migrate = command "migrate" (info (Migrate <$> initOption <*> directoryOption <*> dropOption) (progDesc ""))
     new = command "new" (info (New <$> argument str (metavar "DESCRIPTION") <*> directoryOption) (progDesc ""))
 
 readConnectInfo :: MonadIO m => m ConnectInfo
@@ -56,8 +59,8 @@ createNewMigration desc dir = do
   logDebugS logSource $ uformat ("Created " % string) filepath 
 
 -- TO DO: Break this beast up into some proper Haskell functions.
-migrate :: (MonadReader env m, HasLogFunc env, MonadUnliftIO m) => Bool -> Maybe FilePath -> m ()
-migrate shouldInit dir = do 
+migrate :: (MonadReader env m, HasLogFunc env, MonadUnliftIO m) => Bool -> Maybe FilePath -> Bool -> m ()
+migrate shouldInit dir dropDatabase = do 
   let path = fromMaybe "." dir 
   exists <- doesDirectoryExist path
   unless exists $ do
@@ -70,6 +73,7 @@ migrate shouldInit dir = do
   runResourceT $ do
     conn <- snd <$> allocate (liftIO $ connect connectInfo{connectDatabase="postgres"}) close
     runRIO (PG conn lf) $ do
+      when dropDatabase $ void $ execute_ (fromString $ "DROP DATABASE IF EXISTS " <> dbname)
       dbexists <- value1 "SELECT EXISTS (SELECT 1 FROM pg_database WHERE datname = ?)" (Only dbname)
       unless dbexists $ do
         if shouldInit
@@ -105,7 +109,7 @@ main = do
   withLogFunc options $ \lf -> runRIO lf $ do
     cmd <- liftIO $ execParser opts
     case cmd of
-      Migrate init dir -> migrate init dir 
+      Migrate init dir dropDatabase -> migrate init dir dropDatabase
       New desc dir -> createNewMigration desc dir
   where
     opts = info
