@@ -1,3 +1,3 @@
 # migrator
 
-A low-level PostgreSQL migration tool written in Haskell.
+A low-level, slightly idiosyncratic PostgreSQL migration tool written in Haskell for my personal use.
