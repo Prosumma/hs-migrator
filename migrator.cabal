@@ -38,7 +38,10 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wno-name-shadowing -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.7 && <5
+    , formatting
     , optparse-applicative
+    , postgresql-simple
+    , prosumma
     , rio
   default-language: Haskell2010
 
@@ -56,8 +59,11 @@ executable migrate
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wno-name-shadowing -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , formatting
     , migrator
     , optparse-applicative
+    , postgresql-simple
+    , prosumma
     , rio
   default-language: Haskell2010
 
@@ -76,7 +82,10 @@ test-suite migrate-test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wno-name-shadowing -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , formatting
     , migrator
     , optparse-applicative
+    , postgresql-simple
+    , prosumma
     , rio
   default-language: Haskell2010

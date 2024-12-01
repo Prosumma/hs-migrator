@@ -21,7 +21,10 @@ description:         Please see the README on GitHub at <https://github.com/pros
 
 dependencies:
 - base >= 4.7 && < 5
+- formatting
 - optparse-applicative
+- postgresql-simple
+- prosumma
 - rio
 
 default-extensions:
