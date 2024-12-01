@@ -1,6 +1,8 @@
+{-# LANGUAGE OverloadedRecordDot #-}
+
 module Main (main) where
 
-import Database.PostgreSQL.Simple (ConnectInfo)
+import Control.Monad.Trans.Resource
 import Data.Text.Read (decimal)
 import Formatting
 import Options.Applicative
@@ -39,8 +41,8 @@ readConnectInfo = ConnectInfo
   <$> envString (Just "127.0.0.1") "PGHOST"
   <*> envValue (Just 5432) decimal "PGPORT" 
   <*> envString (Just "postgres") "PGUSER"
-  <*> envString (Just "") "PGDATABASE" 
   <*> envString (Just "") "PGPASSWORD"
+  <*> envString (Just "") "PGDATABASE" 
 
 createNewMigration :: (MonadReader env m, HasLogFunc env, MonadIO m) => FilePath -> Maybe FilePath -> m ()
 createNewMigration desc dir = do
@@ -53,16 +55,49 @@ createNewMigration desc dir = do
   writeFile filepath "-- Create your new migration here."
   logDebugS logSource $ uformat ("Created " % string) filepath 
 
-migrate :: (MonadReader env m, HasLogFunc env, MonadIO m) => Bool -> Maybe FilePath -> m ()
-migrate _ dir = do 
+-- TO DO: Break this beast up into some proper Haskell functions.
+migrate :: (MonadReader env m, HasLogFunc env, MonadUnliftIO m) => Bool -> Maybe FilePath -> m ()
+migrate shouldInit dir = do 
   let path = fromMaybe "." dir 
   exists <- doesDirectoryExist path
   unless exists $ do
     logWarnS logSource $ uformat ("The directory '" % string % "' does not exist. Quitting.") path
     exitFailure
-  conn <- liftIO $ readConnectInfo >>= connect 
   lf <- asks (^.logFuncL)
-  runRIO (PG conn lf) $ void $ execute_ "PERFORM 1" 
+  connectInfo <- readConnectInfo
+  let dbname = connectInfo.connectDatabase
+  -- Create the database if needed and if permitted.
+  runResourceT $ do
+    conn <- snd <$> allocate (liftIO $ connect connectInfo{connectDatabase="postgres"}) close
+    runRIO (PG conn lf) $ do
+      dbexists <- value1 "SELECT EXISTS (SELECT 1 FROM pg_database WHERE datname = ?)" (Only dbname)
+      unless dbexists $ do
+        if shouldInit
+          then void $ execute_ (fromString $ "CREATE DATABASE " <> dbname) 
+          else do
+            logErrorS logSource $ 
+              uformat ("The database " % string % " does not exist and --no-init was passed to prevent its creation.") dbname
+            exitFailure
+  -- Use the database
+  runResourceT $ do
+    conn <- snd <$> allocate (liftIO $ connect connectInfo) close
+    runRIO (PG conn lf) $ do
+      schemaExists <- value1 "SELECT EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = ?)" (Only "__migrations" :: Only Text)
+      unless schemaExists $ do
+        if shouldInit 
+          then void $ execute_ "CREATE SCHEMA __migrations" 
+          else do
+              logErrorS logSource $
+                uformat ("The schema __migrations does not exist in the database " % string % " and --no-init was passed to prevent its creation.") dbname
+              exitFailure
+      migrationsTableExists <- value1 "SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = ? AND tablename = 'migrations')" (Only "__migrations" :: Only Text)
+      unless migrationsTableExists $ do
+        if shouldInit
+          then void $ execute_ "CREATE TABLE __migrations.migrations(id BIGSERIAL NOT NULL PRIMARY KEY)"
+          else do
+            logErrorS logSource $
+              uformat ("The table __migrations.migrations does not exist in the database " % string % " and --no-init was passed to prevent its creation.") dbname
+            exitFailure
 
 main :: IO ()
 main = do 
