@@ -47,20 +47,16 @@ migrate shouldInit dir dropDatabase = do
   unless exists $ do
     logWarnS logSource $ uformat ("The directory '" % string % "' does not exist. Quitting.") path
     exitFailure
-  lf <- asks (^.logFuncL)
   connectInfo <- readConnectInfo
   let dbname = connectInfo.connectDatabase
   -- Create the database if needed and if permitted.
-  runResourceT $ do
-    conn <- snd <$> allocate (liftIO $ connect connectInfo{connectDatabase="postgres"}) close
-    runRIO (PG conn lf) $ createDatabaseIfNeeded dbname 
+  runConnection connectInfo{connectDatabase="postgres"} $
+    createDatabaseIfNeeded dbname
   -- Use the database
-  runResourceT $ do
-    conn <- snd <$> allocate (liftIO $ connect connectInfo) close
-    runRIO (PG conn lf) $ do
-      createSchemaIfNeeded dbname
-      createMigrationsTableIfNeeded dbname
-      performMigration path
+  runConnection connectInfo $ do
+    createSchemaIfNeeded dbname
+    createMigrationsTableIfNeeded dbname
+    performMigration path
   where
     createDatabaseIfNeeded dbname = do
       when dropDatabase $ void $ execute_ (fromString $ "DROP DATABASE IF EXISTS " <> dbname)
@@ -91,6 +87,13 @@ migrate shouldInit dir dropDatabase = do
               uformat migrationsTableDoesNotExistFMT dbname
             exitFailure
 
+runConnection :: (MonadReader env m, HasLogFunc env, MonadUnliftIO m) => ConnectInfo -> RIO (PG Connection) a -> m a
+runConnection connectInfo action = do 
+  lf <- asks (^.logFuncL)
+  runResourceT $ do
+    conn <- snd <$> allocate (connect connectInfo) close
+    runRIO (PG conn lf) action
+
 migrationsExistsSQL :: Query
 migrationsExistsSQL = "SELECT EXISTS (SELECT 1 FROM __migrations.migrations WHERE migration = ?)"
 
@@ -112,9 +115,9 @@ createMigrationsTableSQL = "CREATE TABLE __migrations.migrations(\
   \, migration CITEXT NOT NULL UNIQUE\
   \, migrated TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')\
   \)"
-  
+
 databaseDoesNotExistFMT :: Format a (String -> a)
-databaseDoesNotExistFMT = "The database"
+databaseDoesNotExistFMT = "The database "
   % string
   % " does not exist and --no-init was passed to prevent its creation."
   
