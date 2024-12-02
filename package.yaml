@@ -25,6 +25,7 @@ dependencies:
 - optparse-applicative
 - postgresql-simple
 - prosumma
+- regex-tdfa
 - resourcet
 - rio
 - text

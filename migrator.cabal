@@ -42,6 +42,7 @@ library
     , optparse-applicative
     , postgresql-simple
     , prosumma
+    , regex-tdfa
     , resourcet
     , rio
     , text
@@ -66,6 +67,7 @@ executable migrate
     , optparse-applicative
     , postgresql-simple
     , prosumma
+    , regex-tdfa
     , resourcet
     , rio
     , text
@@ -91,6 +93,7 @@ test-suite migrate-test
     , optparse-applicative
     , postgresql-simple
     , prosumma
+    , regex-tdfa
     , resourcet
     , rio
     , text

@@ -10,10 +10,13 @@ import Prosumma.PG
 import Prosumma.Util
 import Prosumma.Util.Environment
 import RIO
-import RIO.ByteString
 import RIO.Directory
 import RIO.FilePath
 import RIO.Time
+import Text.Regex.TDFA ((=~))
+
+import qualified RIO.ByteString as ByteString
+import qualified RIO.Text as Text
 
 logSource :: LogSource
 logSource = "MIGRATE"
@@ -47,6 +50,9 @@ readConnectInfo = ConnectInfo
   <*> envString (Just "") "PGPASSWORD"
   <*> envString (Just "") "PGDATABASE" 
 
+fileRegex :: Text
+fileRegex = "^[0-9]{14}_[a-zA-Z0-9_-]+\\.psql$"
+
 createNewMigration :: (MonadReader env m, HasLogFunc env, MonadIO m) => FilePath -> Maybe FilePath -> m ()
 createNewMigration desc dir = do
   let path = fromMaybe "." dir 
@@ -54,8 +60,12 @@ createNewMigration desc dir = do
   unless exists $ createDirectoryIfMissing True path 
   currentTime <- getCurrentTime
   let timePrefix = formatTime defaultTimeLocale "%Y%m%d%H%M%S" currentTime
-  let filepath = path </> (timePrefix <> "_" <> desc <> ".psql")
-  writeFile filepath "-- Create your new migration here."
+  let filename = timePrefix <> "_" <> desc <> ".psql"
+  unless (filename =~ fileRegex) $ do
+    logErrorS logSource $ uformat ("The generated filename '" % string % "' is not valid and cannot be created.") filename
+    exitFailure
+  let filepath = path </> filename 
+  ByteString.writeFile filepath "-- Create your new migration here."
   logDebugS logSource $ uformat ("Created " % string) filepath 
 
 -- TO DO: Break this beast up into some proper Haskell functions.
@@ -97,11 +107,20 @@ migrate shouldInit dir dropDatabase = do
       migrationsTableExists <- value1 "SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = ? AND tablename = 'migrations')" (Only "__migrations" :: Only Text)
       unless migrationsTableExists $ do
         if shouldInit
-          then void $ execute_ "CREATE TABLE __migrations.migrations(id BIGSERIAL NOT NULL PRIMARY KEY)"
+          then void $ execute_ "CREATE TABLE __migrations.migrations(id SERIAL NOT NULL PRIMARY KEY, migration TEXT NOT NULL UNIQUE)"
           else do
             logErrorS logSource $
               uformat ("The table __migrations.migrations does not exist in the database " % string % " and --no-init was passed to prevent its creation.") dbname
             exitFailure
+      files <- filter (=~ fileRegex) <$> listDirectory path
+      for_ files $ \filename -> do 
+        let migration = dropExtension filename
+        exists <- value1 "SELECT EXISTS (SELECT 1 FROM __migrations.migrations WHERE migration = ?)" (Only migration)
+        unless exists $ do
+          sql <- readFileUtf8 $ path </> filename
+          -- There's probably a better way to do this
+          void $ execute_ (fromString $ Text.unpack sql)
+          void $ execute "INSERT INTO __migrations.migrations(migration) VALUES(?)" (Only migration)
 
 main :: IO ()
 main = do 
