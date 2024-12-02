@@ -101,9 +101,9 @@ migrate shouldInit dir dropDatabase = do
         if shouldInit 
           then void $ execute_ "CREATE SCHEMA __migrations" 
           else do
-              logErrorS logSource $
-                uformat ("The schema __migrations does not exist in the database " % string % " and --no-init was passed to prevent its creation.") dbname
-              exitFailure
+            logErrorS logSource $
+              uformat ("The schema __migrations does not exist in the database " % string % " and --no-init was passed to prevent its creation.") dbname
+            exitFailure
       migrationsTableExists <- value1 "SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = ? AND tablename = 'migrations')" (Only "__migrations" :: Only Text)
       unless migrationsTableExists $ do
         if shouldInit
