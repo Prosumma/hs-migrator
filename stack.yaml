@@ -39,11 +39,10 @@ packages:
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
 #
 extra-deps:
-- github: prosumma/hs-prosumma
-  commit: 834f2b3df6d8c0600fbba47721e63c285c669c9c
+  - github: prosumma/hs-prosumma
+    commit: ce1ad586c18cc48951dddc42d361dda0415ca3ed
 # Override default flag values for project packages and extra-deps
 # flags: {}
-
 # Extra package databases containing global packages
 # extra-package-dbs: []
 
