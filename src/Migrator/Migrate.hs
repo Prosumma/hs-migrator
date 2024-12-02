@@ -85,7 +85,9 @@ migrate shouldInit dir dropDatabase = do
       migrationsTableExists <- value1 "SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = ? AND tablename = 'migrations')" (Only "__migrations" :: Only Text)
       unless migrationsTableExists $ do
         if shouldInit
-          then void $ execute_ "CREATE TABLE __migrations.migrations(id SERIAL NOT NULL PRIMARY KEY, migration TEXT NOT NULL UNIQUE)"
+          then do
+            void $ execute_ "CREATE EXTENSION IF NOT EXISTS citext;"
+            void $ execute_ "CREATE TABLE __migrations.migrations(id SERIAL NOT NULL PRIMARY KEY, migration CITEXT NOT NULL UNIQUE)"
           else do
             logErrorS logSource $
               uformat ("The table __migrations.migrations does not exist in the database " % string % " and --no-init was passed to prevent its creation.") dbname
