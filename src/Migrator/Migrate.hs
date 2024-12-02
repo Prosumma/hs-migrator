@@ -87,7 +87,7 @@ migrate shouldInit dir dropDatabase = do
         if shouldInit
           then do
             void $ execute_ "CREATE EXTENSION IF NOT EXISTS citext;"
-            void $ execute_ "CREATE TABLE __migrations.migrations(id SERIAL NOT NULL PRIMARY KEY, migration CITEXT NOT NULL UNIQUE)"
+            void $ execute_ "CREATE TABLE __migrations.migrations(id SERIAL NOT NULL PRIMARY KEY, migration CITEXT NOT NULL UNIQUE, migrated TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'))"
           else do
             logErrorS logSource $
               uformat ("The table __migrations.migrations does not exist in the database " % string % " and --no-init was passed to prevent its creation.") dbname
