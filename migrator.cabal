@@ -25,7 +25,10 @@ source-repository head
 
 library
   exposed-modules:
-      Lib
+      Migrator
+      Migrator.Internal
+      Migrator.Migrate
+      Migrator.New
   other-modules:
       Paths_migrator
   hs-source-dirs:
