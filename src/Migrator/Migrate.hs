@@ -12,6 +12,7 @@ import Prosumma.Util
 import Prosumma.Util.Environment
 import RIO
 import RIO.Directory
+import RIO.List
 import RIO.FilePath
 import Text.Regex.TDFA ((=~))
 
@@ -27,7 +28,7 @@ readConnectInfo = ConnectInfo
 
 performMigration :: FilePath -> RIO (PG Connection) ()
 performMigration path = do
-  files <- filter (=~ fileRegex) <$> listDirectory path
+  files <- sort . filter (=~ fileRegex) <$> listDirectory path
   for_ files $ \filename -> do 
     let filepath = path </> filename
     let migration = dropExtension filename
