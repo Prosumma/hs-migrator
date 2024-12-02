@@ -27,7 +27,7 @@ dropOption = switch $
 parseCommand :: Parser Command
 parseCommand = subparser $ migrate <> new 
   where
-    migrate = command "migrate" (info (Migrate <$> initOption <*> directoryOption <*> dropOption) (progDesc "Perform a migration"))
+    migrate = command "up" (info (Migrate <$> initOption <*> directoryOption <*> dropOption) (progDesc "Perform a migration"))
     new = command "new" (info (New <$> argument str (metavar "DESCRIPTION") <*> directoryOption) (progDesc "Create a new migration step"))
 
 main :: IO ()

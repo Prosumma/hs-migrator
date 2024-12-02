@@ -29,13 +29,16 @@ performMigration :: FilePath -> RIO (PG Connection) ()
 performMigration path = do
   files <- filter (=~ fileRegex) <$> listDirectory path
   for_ files $ \filename -> do 
+    let filepath = path </> filename
     let migration = dropExtension filename
     exists <- value1 "SELECT EXISTS (SELECT 1 FROM __migrations.migrations WHERE migration = ?)" (Only migration)
     unless exists $ do
-      sql <- readFileUtf8 $ path </> filename
+      logInfoS logSource $ uformat ("About to process " % string % ".") filepath 
+      sql <- readFileUtf8 filepath 
       -- There's probably a better way to do this
       void $ execute_ (fromString $ Text.unpack sql)
       void $ execute "INSERT INTO __migrations.migrations(migration) VALUES(?)" (Only migration)
+      logInfoS logSource $ uformat ("Processed " % string % ".") filepath
 
 migrate :: (MonadReader env m, HasLogFunc env, MonadUnliftIO m) => Bool -> Maybe FilePath -> Bool -> m ()
 migrate shouldInit dir dropDatabase = do 

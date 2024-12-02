@@ -15,7 +15,9 @@ createNewMigration :: (MonadReader env m, HasLogFunc env, MonadIO m) => FilePath
 createNewMigration desc dir = do
   let path = fromMaybe "." dir 
   exists <- doesDirectoryExist path
-  unless exists $ createDirectoryIfMissing True path 
+  unless exists $ do
+    logWarnS logSource $ uformat ("Directory " % string % " did not exist and was created.") path
+    createDirectoryIfMissing True path 
   currentTime <- getCurrentTime
   let timePrefix = formatTime defaultTimeLocale "%Y%m%d%H%M%S" currentTime
   let filename = timePrefix <> "_" <> desc <> ".psql"
@@ -24,4 +26,4 @@ createNewMigration desc dir = do
     exitFailure
   let filepath = path </> filename 
   ByteString.writeFile filepath "-- Create your new migration here."
-  logDebugS logSource $ uformat ("Created " % string) filepath 
+  logInfoS logSource $ uformat ("Created " % string) filepath 
