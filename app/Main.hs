@@ -14,10 +14,11 @@ directoryOption = optional $ strOption $
   <> help "Directory for migrations (default: .)"
 
 initOption :: Parser Bool  
-initOption = not <$> switch ( 
-       long "no-init"
-    <> help "Set this flag to disable initializing the database"
-  )
+initOption = not <$> noInit 
+  where
+    noInit = switch $
+         long "no-init"
+      <> help "Set this flag to disable initializing the database"
 
 dropOption :: Parser Bool
 dropOption = switch $

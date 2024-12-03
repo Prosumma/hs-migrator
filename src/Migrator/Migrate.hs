@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE OverloadedRecordDot, ScopedTypeVariables #-}
 
 module Migrator.Migrate (migrate) where
 
@@ -28,18 +28,23 @@ readConnectInfo = ConnectInfo
 
 performMigration :: FilePath -> RIO (PG Connection) ()
 performMigration path = do
+  highWater <- value1_ "SELECT COALESCE(MAX(migration), '00000000000000')::TEXT FROM __migrations.migrations"
   files <- sort . filter (=~ fileRegex) <$> listDirectory path
   for_ files $ \filename -> do 
-    let filepath = path </> filename
     let migration = dropExtension filename
     exists <- value1 migrationsExistsSQL (Only migration)
     unless exists $ do
-      logInfoS logSource $ uformat ("About to process " % string % ".") filepath 
-      sql <- readFileUtf8 filepath 
-      -- There's probably a better way to do this
-      void $ execute_ (fromString $ Text.unpack sql)
-      void $ execute insertMigrationSQL (Only migration)
-      logInfoS logSource $ uformat ("Processed " % string % ".") filepath
+      let filepath = path </> filename
+      if migration < highWater 
+        then logWarnS logSource $
+          uformat ("The migration " % string % " has been skipped because later migrations have already been processed.") filepath 
+        else do 
+          logInfoS logSource $ uformat ("About to process " % string % ".") filepath 
+          sql <- readFileUtf8 filepath 
+          -- There's probably a better way to do this
+          void $ execute_ (fromString $ Text.unpack sql)
+          void $ execute insertMigrationSQL (Only migration)
+          logInfoS logSource $ uformat ("Processed " % string % ".") filepath
 
 migrate :: (MonadReader env m, HasLogFunc env, MonadUnliftIO m) => Bool -> Maybe FilePath -> Bool -> m ()
 migrate shouldInit dir dropDatabase = do 
