@@ -1,5 +1,5 @@
 name:                migrator
-version:             1.0.0.0 
+version:             1.0.0.1
 github:              "prosumma/hs-migrator"
 license:             MIT 
 author:              "Gregory Higley / Prosumma Inc."
