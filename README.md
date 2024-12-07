@@ -2,6 +2,9 @@
 
 A low-level, slightly idiosyncratic PostgreSQL migration tool written in Haskell for my personal use.
 
+- It supports PostgreSQL only.
+- It supports only "up" migrations, not "down" migrations.
+
 ## Installation
 
 ```sh

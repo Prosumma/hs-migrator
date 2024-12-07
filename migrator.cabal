@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           migrator
-version:        1.0.0.1
+version:        1.0.0.2
 description:    Please see the README on GitHub at <https://github.com/prosumma/hs-migrator#readme>
 homepage:       https://github.com/prosumma/hs-migrator#readme
 bug-reports:    https://github.com/prosumma/hs-migrator/issues
