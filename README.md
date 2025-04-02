@@ -25,4 +25,4 @@ Connection information is not passed with command line arguments, but using the 
 PGDATABASE=foo PGUSER=bob migrate up --drop --directory migrations
 ```
 
-The specified user must have the appropriate permissions to perform the migration. What exactly those are depends on the migration and options (such as `--drop`), but in general, a migration should be run by a superuser, since it involves extensive use of DDL. 
+The specified user must have the appropriate permissions to perform the migration. What exactly those are depends on the migration and options (such as `--drop`), but in general, a migration should be run by a superuser, since it involves extensive use of DDL.
