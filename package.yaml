@@ -1,7 +1,7 @@
 name:                migrator
 version:             1.0.0.2
 github:              "prosumma/hs-migrator"
-license:             MIT 
+license:             MIT
 author:              "Gregory Higley / Prosumma Inc."
 maintainer:          "greg@prosumma.com"
 copyright:           "2024 Prosumma Inc."
@@ -20,14 +20,17 @@ extra-source-files:
 description:         Please see the README on GitHub at <https://github.com/prosumma/hs-migrator#readme>
 
 dependencies:
+- attoparsec
 - base >= 4.7 && < 5
+- composition-prelude
 - formatting
+- listsafe
 - optparse-applicative
 - postgresql-simple
-- prosumma
 - regex-tdfa
 - resourcet
 - rio
+- string-conversions
 - text
 
 default-extensions:
@@ -72,4 +75,3 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - migrator
-

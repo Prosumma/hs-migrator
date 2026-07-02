@@ -2,7 +2,6 @@ module Migrator.New (createNewMigration) where
 
 import Formatting
 import Migrator.Internal
-import Prosumma.Util
 import RIO
 import RIO.Directory
 import RIO.FilePath

@@ -3,18 +3,7 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/topics/lock_files
 
-packages:
-- completed:
-    name: prosumma
-    pantry-tree:
-      sha256: 12ecaff6e134a79dfa1e415e5f2371c426c4e24267272bf3783bb27620524861
-      size: 2925
-    sha256: 9e070aa3069086d7d445801ed5f34cb2bd76ec86a9c9e9757ab726f38f825e5b
-    size: 34922
-    url: https://github.com/prosumma/hs-prosumma/archive/ce1ad586c18cc48951dddc42d361dda0415ca3ed.tar.gz
-    version: 1.7.3.0
-  original:
-    url: https://github.com/prosumma/hs-prosumma/archive/ce1ad586c18cc48951dddc42d361dda0415ca3ed.tar.gz
+packages: []
 snapshots:
 - completed:
     sha256: 238fa745b64f91184f9aa518fe04bdde6552533d169b0da5256670df83a0f1a9

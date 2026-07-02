@@ -3,28 +3,37 @@
 module Migrator.Migrate (migrate) where
 
 import Control.Monad.Trans.Resource
-import Data.Text.Read (decimal)
 import Formatting
 import Migrator.Internal
+import Migrator.PG
 import Options.Applicative
-import Prosumma.PG
-import Prosumma.Util
-import Prosumma.Util.Environment
 import RIO
 import RIO.Directory
 import RIO.List
 import RIO.FilePath
+import System.Environment (lookupEnv)
 import Text.Regex.TDFA ((=~))
 
 import qualified RIO.Text as Text
 
+-- | Every call site here supplies a default, so unlike the old
+-- @Prosumma.Util.Environment@ helpers this never needs to throw
+-- on a missing variable.
+readEnv :: (MonadIO m) => String -> String -> m String
+readEnv key def = fromMaybe def <$> liftIO (lookupEnv key)
+
+readEnvValue :: (MonadIO m, Read a) => String -> a -> m a
+readEnvValue key def = do
+  value <- liftIO $ lookupEnv key
+  return $ fromMaybe def (value >>= readMaybe)
+
 readConnectInfo :: MonadIO m => m ConnectInfo
 readConnectInfo = ConnectInfo
-  <$> envString (Just "127.0.0.1") "PGHOST"
-  <*> envValue  (Just 5432) decimal "PGPORT" 
-  <*> envString (Just "postgres") "PGUSER"
-  <*> envString (Just "") "PGPASSWORD"
-  <*> envString (Just "") "PGDATABASE" 
+  <$> readEnv "PGHOST" "127.0.0.1"
+  <*> readEnvValue "PGPORT" 5432
+  <*> readEnv "PGUSER" "postgres"
+  <*> readEnv "PGPASSWORD" ""
+  <*> readEnv "PGDATABASE" ""
 
 performMigration :: FilePath -> RIO (PG Connection) ()
 performMigration path = do
